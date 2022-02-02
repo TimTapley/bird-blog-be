@@ -52,7 +52,20 @@ app.post('/signUp', async (req,res) => {
         database: 'bird-blog'
     })
 
-    const result = await connection.query("INSERT INTO `users` (`username`, `bio`, `email`, `password`) VALUES ('" + username + "', '" + bio + "', '" + email + "', '" + password + "' )")
+    let users = await connection.query("SELECT `username`, `bio`, `email`, `password`, `id` FROM `users`")
+
+    users = JSON.parse(JSON.stringify(users))
+
+    const user = users.find((u) => {
+        return u.email === email
+    })
+
+    if (user) {
+        res.json({success: false, message: 'email already in use'})
+        return;
+    }
+
+    const result = await connection.query("INSERT INTO users (username, bio, email, password) VALUES (?,?,?,?)", [username, bio, email, password])
 
     if (!result){
         res.json({success: false, message: "something went wrong"})
@@ -125,8 +138,8 @@ app.post('/userProfileWritePost', async (req,res) => {
 
     let dateTime = '2022-01-15 17:38:34'
     // const userInfo = await connection.query("SELECT `id`, `username`, `bio` FROM `users` WHERE `id` = '" + req.params.id + "'")
-    const result = await connection.query("INSERT INTO `posts` (`user-id`,`common`, `binomial`, `date`, `where`) VALUES" +
-        " ('" + userId + "','" + common + "', '" + binomial + "', '" + date + "', '" + where + "')")
+    const result = await connection.query("INSERT INTO `posts` (`user-id`,`common`, `binomial`, `date`, `where`) VALUES (?,?,?,?,?)", [userId, common, binomial, date, where])
+
     // res.json({posts: posts, userInfo: userInfo})
 
     if (!result){
@@ -149,6 +162,7 @@ app.get('/myProfile', jwtCheck, errorCheck, async (req, res) => {
 
     // const userInfo = await connection.query("SELECT `username`, `bio`,`id` FROM `users` WHERE `id` = '" + id + "'")
     const posts = await connection.query(" SELECT `common`, `binomial`, `date`, `where` FROM `posts` WHERE `user-id` = '" + id + "'")
+    console.log(posts)
     res.json({posts: posts})
 
 })
